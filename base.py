@@ -26,9 +26,9 @@ class Worker(ABC):
     p.start()
     # print(p)
     # p.start()
-    # self.pid = p.pid
-    # self.name = f"worker-{self.pid}"
-    # logging.info(f"Created {self.name}")
+    self.pid = p.pid
+    self.name = f"worker-{self.pid}"
+    logging.info(f"Created {self.name}")
     p.join()
 
         

@@ -7,17 +7,22 @@ from threading import current_thread
 
 from client import main_runner
 
-from constants import LOGFILE, N_WORKERS, DATA_PATH
+from constants import LOGFILE, N_WORKERS, DATA_PATH,COUNT
 
 from worker import WcWorker
 from mrds import MyRedis
+
+import time
 
 
 if __name__ == "__main__":
     
     
     rds = MyRedis()
+    start = time.time()
     main_runner(rds)
+    end = time.time()
+    print(end - start)
     
     print("Done with counting with redis")
     
@@ -36,9 +41,12 @@ if __name__ == "__main__":
     print("Done with counting serially")
     
     for word, count in word_count:
-        assert rds.rds.zscore("WORD",word) == count
+        assert rds.rds.zscore(COUNT,word) == count
+        # v = rds.rds.hget("WORD",word)
+        # v = v.decode()
+        # v = int(v)
+        # assert v == count
     
-    # print it works with thumbs up emoji
     print("Works ✅")
     
     

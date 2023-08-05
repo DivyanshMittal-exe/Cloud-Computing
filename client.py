@@ -5,7 +5,7 @@ import signal
 import sys
 from threading import current_thread
 
-from constants import LOGFILE, N_WORKERS, DATA_PATH
+from constants import LOGFILE, N_WORKERS, DATA_PATH,COUNT
 from worker import WcWorker
 from mrds import MyRedis
 
@@ -50,6 +50,11 @@ def main_runner(rds):
     except:
       break
 
+  
+  # pids = rds.rds.hkeys("PID")
+  
+  # rds.rds.zunionstore(COUNT,pids)
+  
   
     
 
