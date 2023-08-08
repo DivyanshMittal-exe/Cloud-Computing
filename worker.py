@@ -1,6 +1,8 @@
 import logging
 from typing import Any
 
+import csv
+
 from base import Worker
 from constants import FNAME
 from mrds import MyRedis
@@ -14,7 +16,6 @@ class WcWorker(Worker):
     rds.rds.hincrby("PID",self.pid) 
     # Write the code for the worker thread here.
     
-    # Read the FILENAME from the redis server xstream, and count the frequency of number of words in the file. I have an xgroup stream for redis variable rds as rds.xgroup_create(IN, Worker.GROUP, id="0", mkstream=True) and the filenames in the stream are appended as self.rds.xadd(IN, {FNAME: fname})
     while True:
       data = rds.rds.xreadgroup(WcWorker.GROUP, self.name, {IN: ">"}, count=1)
       if not data:
@@ -26,13 +27,29 @@ class WcWorker(Worker):
         logging.debug(f"Processing {file}")
         
         local_count = {}
+
         with open(file) as f:
-          for line in f:
-            for word in line.split():
+          
+          csvreader = csv.reader(f)
+          next(csvreader, None)
+          for row in csvreader:
+            # print(row)
+            try:
+              txt = row[4]
+            except:
+              txt = ""
+            for word in txt.split():
               if word in local_count:
-                local_count[word] += 1
+                  local_count[word] += 1
               else:
                 local_count[word] = 1
+            
+            # for line in f:
+            #   for word in line.split():
+            #     if word in local_count:
+            #       local_count[word] += 1
+            #     else:
+            #       local_count[word] = 1
         
         for word, count in local_count.items():
           # rds.rds.hincrby(COUNT,word,count)

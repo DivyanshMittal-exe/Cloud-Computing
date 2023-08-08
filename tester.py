@@ -4,7 +4,7 @@ import os
 import signal
 import sys
 from threading import current_thread
-
+import csv
 from client import main_runner
 
 from constants import LOGFILE, N_WORKERS, DATA_PATH,COUNT
@@ -29,12 +29,20 @@ if __name__ == "__main__":
     word_count = {}
     for file in glob.glob(DATA_PATH):
         with open(file) as f:
-            for line in f:
-                for word in line.split():
-                    if word in word_count:
-                        word_count[word] += 1
-                    else:
-                        word_count[word] = 1
+          
+          csvreader = csv.reader(f)
+          next(csvreader, None)
+          for row in csvreader:
+            # print(row)
+            try:
+              txt = row[4]
+            except:
+              txt = ""
+            for word in txt.split():
+              if word in word_count:
+                  word_count[word] += 1
+              else:
+                word_count[word] = 1
             
     word_count = sorted(word_count.items(), key=lambda x: x[1], reverse=True)
     
