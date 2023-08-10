@@ -4,12 +4,15 @@ import os
 import signal
 import sys
 from threading import current_thread
+from typing import List
+
 
 from constants import LOGFILE, N_WORKERS, DATA_PATH,COUNT
 from worker import WcWorker
 from mrds import MyRedis
 
-workers: list[WcWorker] = []
+workers = []
+# workers: list[WcWorker] = []
 def sigterm_handler(signum, frame):
   logging.info('Killing main process!')
   for w in workers:

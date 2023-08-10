@@ -16,7 +16,8 @@ if __name__ == "__main__":
         start = unique_numbers[i]
         end = unique_numbers[i + 1]
         # print(start, end)
-        df[start:end].to_csv(f"./Test2/split_{i}.csv", index=False)
+        df[start:end].to_csv(f"./Test/split_{i}.csv", index=False)
+        print(f"Done with {i}")
 
     
         

@@ -1,3 +1,4 @@
 Test/*.txt
+Test/*.csv
 __pycache__
 twcs.csv

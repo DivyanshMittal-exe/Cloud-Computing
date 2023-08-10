@@ -9,4 +9,5 @@ remote_server="10.17.7.180"
 remote_folder="~/"
 
 # Rsync command to send data from local to remote
-rsync -avz --delete "$local_folder" "$remote_user@$remote_server:$remote_folder"
+rsync -avz --exclude='twcs.csv' --exclude='Test/' "$local_folder" "$remote_user@$remote_server:$remote_folder"
+

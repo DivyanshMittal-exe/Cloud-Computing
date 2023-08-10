@@ -20,16 +20,13 @@ class Worker(ABC):
   def create_and_run(self, **kwargs: Any) -> None:
     # Create a process using the multiprocessing library
     
-    # Re write this function to use the multiprocessing library
     p = Process(target=self.run, kwargs=kwargs)
     
     p.start()
-    # print(p)
-    # p.start()
     self.pid = p.pid
     self.name = f"worker-{self.pid}"
     logging.info(f"Created {self.name}")
-    p.join()
+
 
         
     # raise NotImplementedError

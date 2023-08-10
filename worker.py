@@ -3,6 +3,8 @@ from typing import Any
 
 import csv
 
+from csv import reader
+
 from base import Worker
 from constants import FNAME
 from mrds import MyRedis
