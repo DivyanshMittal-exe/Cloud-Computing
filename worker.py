@@ -2,8 +2,7 @@ import logging
 from typing import Any
 import pandas as pd
 
-import sys
-
+import os
 import re
 
 from base import Worker
@@ -16,6 +15,10 @@ class WcWorker(Worker):
   def run(self, **kwargs: Any) -> None:
     rds: MyRedis = kwargs['rds']
     
+    self.pid = os.getpid()
+    self.name = f"worker-{self.pid}"
+    logging.info(f"Created {self.name}")
+    
     # rds.rds.hincrby("PID",self.pid)     
     while True:
       data = rds.rds.xreadgroup(WcWorker.GROUP, self.name, {IN: ">"}, count=1)
@@ -25,14 +28,12 @@ class WcWorker(Worker):
         data = data[0][1][0]
         id,data = data
         file = data[FNAME].decode()
-        logging.debug(f"Processing {file}")
-        
-        
+        logging.debug(f"|{self.name}| Processing {file}")
         
         local_count = {}
         
         try:
-          df = pd.read_csv(file, usecols=['text'], dtype={'text': str})  
+          df = pd.read_csv(file, usecols=['text'], dtype={'text': str},lineterminator='\n')  
           text_column = df['text'].tolist()        
           for words in text_column:
             try:
@@ -42,25 +43,14 @@ class WcWorker(Worker):
                 else:
                   local_count[word] = 1
             except:
-              pass
+              logging.critical(f"Couldn't split {words}")
 
         except pd.errors.ParserError as e:
-          print("ParserError:", e)
-            # print(words)
-            # sys.exit(1)
-          
-            
-              
-      
+          logging.critical(f"{file} ParserError:", e)
         
-
-        
-        
-
         # with open(file) as f:
           
         #   data = f.read()
-          
         #   parsed_data = re.findall(r'(?:,|\n|^)("(?:(?:"")*[^"]*)*"|[^",\n]*|(?:\n|$))', data)
 
         # data_lines = parsed_data[5:]
@@ -73,16 +63,16 @@ class WcWorker(Worker):
         #         local_count[word] += 1
         #     else:
         #       local_count[word] = 1
-            
+
+        
         
         for word, count in local_count.items():
-          # rds.rds.hincrby(COUNT,word,count)
-          # rds.rds.zincrby(self.pid,count,word)
           rds.rds.zincrby(COUNT,count,word)
           
         rds.rds.xack(IN, WcWorker.GROUP, id)
-        logging.info(f"Done processing {file}")
+        logging.debug(f"|{self.name}| Done processing {file}")
           
     # send ack after processing the file
         
-    logging.info("Exiting")
+    # logging.info(f"Killing {self.name}")
+    self.kill()
