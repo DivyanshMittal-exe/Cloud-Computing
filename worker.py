@@ -1,9 +1,10 @@
 import logging
 from typing import Any
+import pandas as pd
 
-import csv
+import sys
 
-from csv import reader
+import re
 
 from base import Worker
 from constants import FNAME
@@ -15,9 +16,7 @@ class WcWorker(Worker):
   def run(self, **kwargs: Any) -> None:
     rds: MyRedis = kwargs['rds']
     
-    rds.rds.hincrby("PID",self.pid) 
-    # Write the code for the worker thread here.
-    
+    # rds.rds.hincrby("PID",self.pid)     
     while True:
       data = rds.rds.xreadgroup(WcWorker.GROUP, self.name, {IN: ">"}, count=1)
       if not data:
@@ -28,30 +27,53 @@ class WcWorker(Worker):
         file = data[FNAME].decode()
         logging.debug(f"Processing {file}")
         
+        
+        
         local_count = {}
-
-        with open(file) as f:
-          
-          csvreader = csv.reader(f)
-          next(csvreader, None)
-          for row in csvreader:
-            # print(row)
+        
+        try:
+          df = pd.read_csv(file, usecols=['text'], dtype={'text': str})  
+          text_column = df['text'].tolist()        
+          for words in text_column:
             try:
-              txt = row[4]
+              for word in words.split():
+                if word in local_count:
+                    local_count[word] += 1
+                else:
+                  local_count[word] = 1
             except:
-              txt = ""
-            for word in txt.split():
-              if word in local_count:
-                  local_count[word] += 1
-              else:
-                local_count[word] = 1
+              pass
+
+        except pd.errors.ParserError as e:
+          print("ParserError:", e)
+            # print(words)
+            # sys.exit(1)
+          
             
-            # for line in f:
-            #   for word in line.split():
-            #     if word in local_count:
-            #       local_count[word] += 1
-            #     else:
-            #       local_count[word] = 1
+              
+      
+        
+
+        
+        
+
+        # with open(file) as f:
+          
+        #   data = f.read()
+          
+        #   parsed_data = re.findall(r'(?:,|\n|^)("(?:(?:"")*[^"]*)*"|[^",\n]*|(?:\n|$))', data)
+
+        # data_lines = parsed_data[5:]
+        # data_lines = data_lines[6::7]
+        
+        
+        # for txt in data_lines:
+        #   for word in txt.split():
+        #     if word in local_count:
+        #         local_count[word] += 1
+        #     else:
+        #       local_count[word] = 1
+            
         
         for word, count in local_count.items():
           # rds.rds.hincrby(COUNT,word,count)
