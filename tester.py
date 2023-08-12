@@ -25,20 +25,40 @@ if __name__ == "__main__":
     main_runner(rds)
     end = time.time()
     
-    print("Done with counting with redis")
+    print(f"Done with counting with redis in {end-start} seconds")
     
     word_count = {}
     
-    for file in glob.glob(DATA_PATH):
-      df = pd.read_csv(file, usecols=['text'], dtype={'text': str},lineterminator='\n')  
+    
+    wc = {}
+
+    # for filename in glob.glob(DATA_PATH):
+
+    filename = "twcs.csv"
+
+    df = pd.read_csv(filename)
+    df["text"] = df["text"].astype(str)
+    for text in df.loc[:,"text"]:
+        if text == '\n':
+            continue
+
+        for word in text.split(" "):
+            if word not in wc:
+                wc[word] = 0
+            wc[word] = wc[word] + 1
+
+    
+    word_count = wc
+    # for file in glob.glob(DATA_PATH):
+    #   df = pd.read_csv(file, usecols=['text'], dtype={'text': str},lineterminator='\n')  
       
-      for index, row in df.iterrows():
-        text_is = row['text']
-        for word in text_is.split():
-          if word in word_count:
-              word_count[word] += 1
-          else:
-            word_count[word] = 1
+    #   for index, row in df.iterrows():
+    #     text_is = row['text']
+    #     for word in text_is.split():
+    #       if word in word_count:
+    #           word_count[word] += 1
+    #       else:
+    #         word_count[word] = 1
             
     word_count = sorted(word_count.items(), key=lambda x: x[1], reverse=True)
     

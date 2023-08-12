@@ -45,7 +45,7 @@ class WcWorker(Worker):
         #           local_count[word] += 1
         
         
-        df = pd.read_csv(file,lineterminator='\n', usecols=['text'], dtype={'text': str})
+        df = pd.read_csv(file,lineterminator='\n')
         df["text"] = df["text"].astype(str)
         for text in df.loc[:,"text"]:
             if text == '\n':
