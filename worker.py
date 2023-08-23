@@ -4,6 +4,7 @@ import pandas as pd
 
 import os
 import re
+import json
 
 from base import Worker
 from constants import FNAME
@@ -92,12 +93,22 @@ class WcWorker(Worker):
 
         
         
-        for word, count in local_count.items():
-          rds.rds.zincrby(COUNT,count,word)
+        # for word, count in local_count.items():
+        #   rds.rds.zincrby(COUNT,count,word)
           
-        rds.rds.xack(IN, WcWorker.GROUP, id)
-        logging.debug(f"|{self.name}| Done processing {file}")
-          
+        # rds.rds.xack(IN, WcWorker.GROUP, id)
+        
+        
+        
+        keys_and_args = [IN,COUNT,WcWorker.GROUP, id, json.dumps(local_count)]   # consumer_group, id, localCountJSON 
+        
+        success = rds.rds.fcall("push_wc", 2 , *keys_and_args)
+        
+        if success:
+          logging.debug(f"|{self.name}| Done processing {file}")
+        else:
+          logging.debug(f"|{self.name}| Tried processing {file}, already acked by someone else")
+
     # send ack after processing the file
         
     # logging.info(f"Killing {self.name}")

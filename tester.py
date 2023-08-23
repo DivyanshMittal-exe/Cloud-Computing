@@ -32,20 +32,20 @@ if __name__ == "__main__":
     
     wc = {}
 
-    # for filename in glob.glob(DATA_PATH):
+    for filename in glob.glob(DATA_PATH):
 
-    filename = "twcs.csv"
+    # filename = "twcs.csv"
 
-    df = pd.read_csv(filename)
-    df["text"] = df["text"].astype(str)
-    for text in df.loc[:,"text"]:
-        if text == '\n':
-            continue
+        df = pd.read_csv(filename)
+        df["text"] = df["text"].astype(str)
+        for text in df.loc[:,"text"]:
+            if text == '\n':
+                continue
 
-        for word in text.split(" "):
-            if word not in wc:
-                wc[word] = 0
-            wc[word] = wc[word] + 1
+            for word in text.split(" "):
+                if word not in wc:
+                    wc[word] = 0
+                wc[word] = wc[word] + 1
 
     
     word_count = wc
