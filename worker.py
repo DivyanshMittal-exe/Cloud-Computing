@@ -22,12 +22,19 @@ class WcWorker(Worker):
     
     # rds.rds.hincrby("PID",self.pid)     
     while True:
-      data = rds.rds.xreadgroup(WcWorker.GROUP, self.name, {IN: ">"}, count=1)
-      
+      try:
+        data = rds.rds.xreadgroup(WcWorker.GROUP, self.name, {IN: ">"}, count=1)
+      except:
+        logging.debug(f"|{self.name}| Encountered an error while Reading. Redis is probably busy")
+        continue
       # xreadgroup(groupname, consumername, streams, count=None, block=None, noack=False)
       if not data:
         time_in_ms = 1000
-        data = rds.rds.xautoclaim(IN, WcWorker.GROUP, self.name, time_in_ms) 
+        try:
+          data = rds.rds.xautoclaim(IN, WcWorker.GROUP, self.name, time_in_ms) 
+        except:
+          logging.debug(f"|{self.name}| Encountered an error while AutoClaiming. Redis is probably busy")
+          continue
         if not data[1]:
           break
         
@@ -61,13 +68,19 @@ class WcWorker(Worker):
       
       
       keys_and_args = [IN,COUNT,WcWorker.GROUP, id, json.dumps(local_count)]   # consumer_group, id, localCountJSON 
+      success = None 
       
-      success = rds.rds.fcall("push_wc", 2 , *keys_and_args)
+      while success is None:
+        try:
+          success = rds.rds.fcall("push_wc", 2 , *keys_and_args)
+          if success:
+            logging.debug(f"|{self.name}| Done processing {file}")
+          else:
+            logging.debug(f"|{self.name}| Tried processing {file}, already acked by someone else")
+        except:
+          logging.debug(f"|{self.name}| Encountered an error while processing {file}. Redis is probably busy")
       
-      if success:
-        logging.debug(f"|{self.name}| Done processing {file}")
-      else:
-        logging.debug(f"|{self.name}| Tried processing {file}, already acked by someone else")
+
 
     # send ack after processing the file
         

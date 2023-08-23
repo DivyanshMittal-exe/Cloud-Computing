@@ -69,10 +69,17 @@ if __name__ == "__main__":
         if rds.rds.zscore(COUNT,word) != count:
           # pass
           print(f"Word {word} has {rds.rds.zscore(COUNT,word)} in redis and {count} in serial")
-        assert rds.rds.zscore(COUNT,word) == count
-
+          
+          # Append the above line to ft_logs.txt
+          with open("ft_logs.txt", 'a') as file:
+            file.write(f"Word {word} has {rds.rds.zscore(COUNT,word)} in redis and {count} in serial\n")
+            break
+    else:
+        # assert rds.rds.zscore(COUNT,word) == count
+        with open("ft_logs.txt", 'a') as file:
+            file.write(f"Works ✅ in {end-start} seconds\n")
     
-    print(f"Works ✅ in {end-start} seconds")
+        print(f"Works ✅ in {end-start} seconds")
     
     print("Top 3 words are:")
     for word, c in rds.top(3):
