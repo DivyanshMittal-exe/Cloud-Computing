@@ -22,6 +22,4 @@ class MyRedis:
   def top(self, n: int) -> list[tuple[bytes, float]]:
     return self.rds.zrevrangebyscore(COUNT, '+inf', '-inf', 0, n,
                                      withscores=True)
-  
-  # def push_counts(self, counts: dict[str, int]) -> None:
     

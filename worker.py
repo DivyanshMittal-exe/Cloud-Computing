@@ -23,91 +23,51 @@ class WcWorker(Worker):
     # rds.rds.hincrby("PID",self.pid)     
     while True:
       data = rds.rds.xreadgroup(WcWorker.GROUP, self.name, {IN: ">"}, count=1)
+      
+      # xreadgroup(groupname, consumername, streams, count=None, block=None, noack=False)
       if not data:
-        break
+        time_in_ms = 1000
+        data = rds.rds.xautoclaim(IN, WcWorker.GROUP, self.name, time_in_ms) 
+        if not data[1]:
+          break
+        
+        data_temp = data[1][0]
+        id,data_temp = data_temp
+        file_claimed = data_temp[FNAME].decode()
+        logging.debug(f"|{self.name}| Auto Claimed {file_claimed}")
+        data = [data]
+        # xautoclaim(name, groupname, consumername, min_idle_time, start_id='0-0', count=None, justid=False)
+     
+      
+      data = data[0][1][0]
+      id,data = data
+      file = data[FNAME].decode()
+      logging.debug(f"|{self.name}| Processing {file}")
+      
+      local_count = {}
+      
+      
+      df = pd.read_csv(file,lineterminator='\n', usecols=['text'], dtype={'text': str})
+      df["text"] = df["text"].astype(str)
+      for text in df.loc[:,"text"]:
+          if text == '\n':
+              continue
+
+          for word in text.split(" "):
+              if word not in local_count:
+                  local_count[word] = 0
+              local_count[word] = local_count[word] + 1
+      
+      
+      
+      keys_and_args = [IN,COUNT,WcWorker.GROUP, id, json.dumps(local_count)]   # consumer_group, id, localCountJSON 
+      
+      success = rds.rds.fcall("push_wc", 2 , *keys_and_args)
+      
+      if success:
+        logging.debug(f"|{self.name}| Done processing {file}")
       else:
-        data = data[0][1][0]
-        id,data = data
-        file = data[FNAME].decode()
-        logging.debug(f"|{self.name}| Processing {file}")
-        
-        local_count = {}
-        
-        # with open(file, mode='r', newline='\r') as f:
-        #   for text in f:
-        #     if text == '\n':
-        #         continue
-        #     sp = text.split(',')[4:-2]
-        #     tweet = " ".join(sp)
-        #     for word in tweet.split(" "):
-        #         if word not in local_count:
-        #           local_count[word] = 1
-        #         else:
-        #           local_count[word] += 1
-        
-        
-        df = pd.read_csv(file,lineterminator='\n', usecols=['text'], dtype={'text': str})
-        df["text"] = df["text"].astype(str)
-        for text in df.loc[:,"text"]:
-            if text == '\n':
-                continue
-
-            for word in text.split(" "):
-                if word not in local_count:
-                    local_count[word] = 0
-                local_count[word] = local_count[word] + 1
-        
-        
-        
-        # try:
-        #   df = pd.read_csv(file, usecols=['text'], dtype={'text': str},lineterminator='\n')  
-        #   text_column = df['text'].tolist()        
-        #   for words in text_column:
-        #     try:
-        #       for word in words.split(" "):
-        #         if word in local_count:
-        #             local_count[word] += 1
-        #         else:
-        #           local_count[word] = 1
-        #     except:
-        #       logging.critical(f"Couldn't split {words}")
-
-        # except pd.errors.ParserError as e:
-        #   logging.critical(f"{file} ParserError:", e)
-        
-        # with open(file) as f:
-          
-        #   data = f.read()
-        #   parsed_data = re.findall(r'(?:,|\n|^)("(?:(?:"")*[^"]*)*"|[^",\n]*|(?:\n|$))', data)
-
-        # data_lines = parsed_data[5:]
-        # data_lines = data_lines[6::7]
-        
-        
-        # for txt in data_lines:
-        #   for word in txt.split():
-        #     if word in local_count:
-        #         local_count[word] += 1
-        #     else:
-        #       local_count[word] = 1
-
-        
-        
-        # for word, count in local_count.items():
-        #   rds.rds.zincrby(COUNT,count,word)
-          
-        # rds.rds.xack(IN, WcWorker.GROUP, id)
-        
-        
-        
-        keys_and_args = [IN,COUNT,WcWorker.GROUP, id, json.dumps(local_count)]   # consumer_group, id, localCountJSON 
-        
-        success = rds.rds.fcall("push_wc", 2 , *keys_and_args)
-        
-        if success:
-          logging.debug(f"|{self.name}| Done processing {file}")
-        else:
-          logging.debug(f"|{self.name}| Tried processing {file}, already acked by someone else")
+        logging.debug(f"|{self.name}| Tried processing {file}, already acked by someone else")
 
     # send ack after processing the file
         
