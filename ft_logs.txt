@@ -1,0 +1,5 @@
+Word upgrade🙄 has None in redis and 1 in serial
+Works ✅ in 6.270176410675049 seconds
+Works ✅ in 7.339690446853638 seconds
+Works ✅ in 5.303330421447754 seconds
+Works ✅ in 5.503663539886475 seconds

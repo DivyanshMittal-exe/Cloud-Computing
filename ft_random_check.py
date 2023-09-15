@@ -13,7 +13,7 @@ def get_number_of_tester():
             # Process cmdline might be a list, convert it to a string
             cmdline_str = " ".join(cmdline)
             
-            if "python3 tester.py" in cmdline_str:
+            if "python3 tester.py" in cmdline_str or "python3 client.py" in cmdline_str:
                 processes.append(process)
             
     
