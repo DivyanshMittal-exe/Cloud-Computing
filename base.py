@@ -7,7 +7,6 @@ import sys
 from abc import abstractmethod, ABC
 from threading import current_thread
 from typing import Any, Final
-from multiprocessing import Process
 
 
 class Worker(ABC):
@@ -16,13 +15,25 @@ class Worker(ABC):
   def __init__(self, **kwargs: Any):
     self.name = "worker-?"
     self.pid = -1
+    self.crash = kwargs['crash'] if 'crash' in kwargs else False
+    self.slow = kwargs['slow'] if 'slow' in kwargs else False
+    self.cpulimit = kwargs['limit'] if 'slow' in kwargs and 'limit' in kwargs else 100
 
   def create_and_run(self, **kwargs: Any) -> None:
-    # Create a process using the multiprocessing library
-    
-    p = Process(target=self.run, kwargs=kwargs)
-    p.start()
-
+    pid = os.fork()
+    assert pid >= 0
+    if pid == 0:
+      # Child worker process
+      self.pid = os.getpid()
+      self.name = f"worker-{self.pid}"
+      thread = current_thread()
+      thread.name = self.name
+      logging.info(f"Starting")
+      self.run(**kwargs)
+      sys.exit()
+    else:
+      self.pid = pid
+      self.name = f"worker-{pid}"
 
   @abstractmethod
   def run(self, **kwargs: Any) -> None:

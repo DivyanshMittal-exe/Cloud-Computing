@@ -3,17 +3,20 @@ import logging
 import os
 import signal
 import sys
+import time
 from threading import current_thread
 
-from constants import LOGFILE, N_WORKERS, DATA_PATH
-from worker import WcWorker
+from constants import LOGFILE, N_NORMAL_WORKERS, N_CRASHING_WORKERS, \
+  N_SLEEPING_WORKERS, N_CPULIMIT, N_FILES
 from mrds import MyRedis
+from worker import WcWorker
 
-workers: list[WcWorker] = []
-def sigterm_handler(signum, frame):
-  logging.info('Killing main process!')
+workers = []
+
+def sig_handler(signum, frame):
   for w in workers:
     w.kill()
+  logging.info('Bye!')
   sys.exit()
 
 
@@ -30,17 +33,38 @@ if __name__ == "__main__":
 
   rds = MyRedis()
 
-  for file in glob.glob(DATA_PATH):
-    rds.add_file(file)
+  # signal.signal(signal.SIGTERM, sig_handler)
+  signal.signal(signal.SIGINT, sig_handler)
 
-  signal.signal(signal.SIGTERM, sigterm_handler)
-  for i in range(N_WORKERS):
-    workers.append(WcWorker(rds=rds))
+  # Crash half the workers after they read a row
+  for i in range(N_NORMAL_WORKERS):
+    workers.append(WcWorker())
+
+  for i in range(N_CRASHING_WORKERS):
+    workers.append(WcWorker(crash=True))
+
+  for i in range(N_SLEEPING_WORKERS):
+    workers.append(WcWorker(slow=True, cpulimit=N_CPULIMIT))
 
   for w in workers:
     w.create_and_run(rds=rds)
-
   logging.debug('Created all the workers')
+
+  for iter, file in enumerate(glob.glob("../data/*.csv")):
+    rds.add_file(file)
+    if (iter+1) % N_FILES == 0:
+      logging.debug(f'Injected {iter+1} files in total so far')
+      time.sleep(2)
+
+  # Wait for workers to finish processing all the files
+  while rds.is_pending():
+    time.sleep(1/8)
+
+  # Kill all the workers
+  for w in workers:
+    w.kill()
+
+  # Wait for workers to exit
   while True:
     try:
       pid_killed, status = os.wait()
@@ -50,3 +74,4 @@ if __name__ == "__main__":
 
   for word, c in rds.top(3):
     logging.info(f"{word.decode()}: {c}")
+  print(rds.get_latency())
