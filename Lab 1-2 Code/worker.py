@@ -101,4 +101,5 @@ class WcWorker(Worker):
     # send ack after processing the file
         
     # logging.info(f"Killing {self.name}")
+    # print(f"Calling kill on {self.name}")
     self.kill()
